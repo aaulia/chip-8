@@ -1,0 +1,8 @@
+-cp src
+-main Main
+-swf bin/chip8.swf
+-swf-header 800:600:60:0x456789
+-swf-version 11
+-debug
+-D fdb
+-cmd flashplayerdebugger bin/chip8.swf
