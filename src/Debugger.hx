@@ -22,20 +22,16 @@ class Debugger extends Sprite {
 
     
     public inline function reset() {
-        chip8    .reset();
-        codeList .reset();
-        scrollbar.reset();
+        chip8.reset();
+        lst_codes.reset();
     }
     
     public function load(rom) {
         if (running) 
             stop();
         
-        chip8   .load(rom);
-        codeList.load(rom);
-        
-        scrollbar.maximum = codeList.length - 1;
-        scrollbar.reset();
+        chip8.load(rom);
+        lst_codes.load(rom);
     }
     
     public inline function start() running = true;
@@ -51,10 +47,12 @@ class Debugger extends Sprite {
     var btn_pause:Button;
     var btn_stop :Button;
     var btn_step :Button;
-    var scrollbar:ScrollBar;
-    var codeList :CodeList;
-    
-    
+    var lst_codes:CodeList;
+
+
+    inline function add_event(p, e, f) p.addEventListener(e, f, false, 0, true);
+    inline function rem_event(p, e, f) p.removeEventListener(e, f, false);
+
     public function new(cpu) {
         super();
         
@@ -62,34 +60,28 @@ class Debugger extends Sprite {
         chip8.gpu.view.x = 10;
         chip8.gpu.view.y = 10;
         addChild(chip8.gpu.view);
-        
-        bmp_main  = new Bitmap(new UIWindowBase(0, 0));
-        addChild(bmp_main);
 
         
-        
-        btn_start = new Button   (this, UIButtonStart, 48, 48, 478, 276, on_start);
-        btn_pause = new Button   (this, UIButtonPause, 48, 48, 478, 330, on_pause);
-        btn_stop  = new Button   (this, UIButtonStop,  48, 48, 478, 384, on_stop);
-        btn_step  = new Button   (this, UIButtonStep,  48, 48, 478, 438, on_step);
-        scrollbar = new ScrollBar(this, UIScrollUp, UIScrollDn, UIScrollMd, 310, 446, 280, 100, on_scroll);
-        codeList  = new CodeList (this, 10, 280, 436, 310);
+        bmp_main  = cast addChild(new Bitmap(new UIWindowBase(0, 0)));
+        btn_start = new Button  (this, UIButtonStart, 48, 48, 478, 276, on_start);
+        btn_pause = new Button  (this, UIButtonPause, 48, 48, 478, 330, on_pause);
+        btn_stop  = new Button  (this, UIButtonStop,  48, 48, 478, 384, on_stop);
+        btn_step  = new Button  (this, UIButtonStep,  48, 48, 478, 438, on_step);
+        lst_codes = new CodeList(this, 10, 280, 458, 310);
 
         btn_start.enabled = true;
         btn_pause.enabled = false;
         btn_stop .enabled = false;
         btn_step .enabled = true;
         
-        
-        
-        addEventListener(Event.ADDED_TO_STAGE,     added_to_stage,     false, 0, true);
-        addEventListener(Event.REMOVED_FROM_STAGE, removed_from_stage, false, 0, true);
+
+        add_event(this, Event.ADDED_TO_STAGE, added_to_stage);
+        add_event(this, Event.REMOVED_FROM_STAGE, removed_from_stage);
     }
     
     function update() {
         chip8.tick();
-        codeList .PC       = chip8.PC;
-        scrollbar.position = (codeList.PC - 0x200) >> 1;
+        lst_codes.position = (chip8.PC - 0x200) >> 1;
     }
     
     function on_start() {
@@ -98,7 +90,7 @@ class Debugger extends Sprite {
         btn_pause.enabled = true;
         btn_stop .enabled = true;
         btn_step .enabled = false;
-        scrollbar.enabled = false;
+        lst_codes.enabled = false;
     }
 
     function on_pause() {
@@ -107,7 +99,7 @@ class Debugger extends Sprite {
         btn_pause.enabled = false;
         btn_stop .enabled = true;
         btn_step .enabled = true;
-        scrollbar.enabled = true;
+        lst_codes.enabled = true;
     }
 
     function on_stop () {
@@ -116,7 +108,7 @@ class Debugger extends Sprite {
         btn_pause.enabled = false;
         btn_stop .enabled = false;
         btn_step .enabled = true;
-        scrollbar.enabled = true;
+        lst_codes.enabled = true;
     }
 
     function on_step () {
@@ -124,20 +116,16 @@ class Debugger extends Sprite {
             update();
     }
     
-    function on_scroll(position, delta) {
-        codeList.scroll = position;
-    }
-    
     function added_to_stage(e:Event) {
-        stage.addEventListener(Event.ENTER_FRAME,      on_frame, false, 0, true);
-        stage.addEventListener(KeyboardEvent.KEY_DOWN, on_key,   false, 0, true);
-        stage.addEventListener(KeyboardEvent.KEY_UP,   on_key,   false, 0, true);
+        add_event(stage, Event.ENTER_FRAME,      on_frame);
+        add_event(stage, KeyboardEvent.KEY_DOWN, on_key);
+        add_event(stage, KeyboardEvent.KEY_UP,   on_key);
     }
     
     function removed_from_stage(e:Event) {
-        stage.removeEventListener(Event.ENTER_FRAME,      on_frame, false);
-        stage.removeEventListener(KeyboardEvent.KEY_DOWN, on_key,   false);
-        stage.removeEventListener(KeyboardEvent.KEY_UP,   on_key,   false);
+        rem_event(stage, Event.ENTER_FRAME,      on_frame);
+        rem_event(stage, KeyboardEvent.KEY_DOWN, on_key);
+        rem_event(stage, KeyboardEvent.KEY_UP,   on_key);
     }
     
     function on_frame(e:Event) {

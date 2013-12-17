@@ -2,7 +2,7 @@
 -main Main
 -swf bin/chip8.swf
 -swf-header 800:600:60:0x000000
--swf-version 11
+-swf-version 11.2
 -debug
 -D fdb
 -cmd flashplayerdebugger bin/chip8.swf

@@ -1,72 +1,66 @@
 package gui;
 
 import flash.display.Sprite;
-import flash.display3D.Context3DStencilAction;
 import flash.geom.Rectangle;
 import flash.text.TextField;
 import flash.text.TextFieldAutoSize;
 import flash.text.TextFormat;
 import res.Fonts;
+import res.Images;
 
 using Std;
 using StringTools;
 
 class CodeList extends Sprite{
 
+    var scbar:ScrollBar;
+    var lists:Sprite;
     var codes:Array<CodeLine>;
     var frame:Rectangle;
-    var index:Int;
 
-    
-    public var PC (get, set):Int;
-    function get_PC() return (index << 1) + 0x200;
-    function set_PC(v) {
-        var n = (v - 0x200) >> 1;
-        if (n < codes.length) {
-            
-            codes[index].highlight = false;
-            index  = n;
-            scroll = index;
-            codes[index].highlight = true;
-            
-        }
+
+    public var position (default, set):Int;
+    function set_position(v) {
+        if (v <  0) v = 0;
+        if (v >= codes.length) v = codes.length - 1;
+
+        codes[position].highlight = false;
+        position = v;
+        codes[position].highlight = true;
+
+        var ch = codes.length * 26;
+        var cy = (codes[position].y - (frame.height - 26) / 2).int();
         
+        if (cy < 0) cy = 0;
+        if (cy > (ch - frame.height)) cy = ch - cast frame.height;
+
+        frame.y = cy;
+        lists.scrollRect = frame;
+        scbar.position = cy;
+
         return v;
     }
-    
-    public var scroll (default, set):Int;
-    function set_scroll(v) {
-        if (v < 0) v = 0;
-        if (v >= codes.length) v = codes.length - 1;
-        
-        var mid_h = (frame.height - 26).int() >> 1;
-        var max_y = (codes.length * 26) - frame.height;
-        
-        frame.y = v * 26 - mid_h;
-        if (frame.y < 0) frame.y = 0;
-        if (frame.y > max_y) 
-            frame.y = max_y - (max_y % 26);
-            
-        scrollRect = frame;
-        return scroll = v;
+
+    public var enabled (default, set):Bool;
+    function set_enabled(v) {
+        var ch = codes.length * 26;
+        scbar.enabled = v && (ch > frame.height);
+        return v;
     }
-    
-    public var length (get, never):Int;
-    function get_length() return codes.length;
-    
-    
-    
+
+
     public function new(parent, x, y, w, h) {
         super();
-        
         parent.addChild(this);
 		
+        lists = cast addChild(new Sprite());
         codes = [];
-        frame = new Rectangle(0, 0, w, h);
+        frame = new Rectangle(0, 0, w - 22, h);
+        scbar = new ScrollBar(this, UIScrollUp, UIScrollDn, UIScrollMd, h.int(), w - 22, 0, 100, on_scroll);
         
         this.x = x;
         this.y = y;
-        this.scrollRect = frame;
+        lists.scrollRect = frame;
     }
     
     public function load(rom) {
@@ -75,18 +69,29 @@ class CodeList extends Sprite{
         var i = 0;
         var p = 0;
         while (p < rom.length) {
-            codes[i] = new CodeLine(this, 0, i * 26, frame.width, 26);
+            codes[i] = new CodeLine(lists, 0, i * 26, frame.width, 26);
             codes[i].text = op_to_string(p, rom.get(p++), rom.get(p++));
+            codes[i].highlight = false;
             i++;
         }
-        
+     
         reset();
     }
-    
+
     public function reset() {
-        PC = 0x200;
+        var ch = codes.length * 26;
+        if (scbar.enabled = (ch > frame.height))
+            scbar.maximum = (ch - frame.height).int();
+
+        position = 0;
     }
-    
+
+
+
+    function on_scroll(pos, delta) {
+        frame.y = pos;
+        lists.scrollRect = frame;
+    }
     
     function op_to_string(pc, hi, lo) {
         
@@ -98,7 +103,7 @@ class CodeList extends Sprite{
         var kk  = lo;
         var nnn = x << 8 | lo;
         
-        var str = '${(0x200 + pc).hex(4)}:  ${hi.hex(2)} ${lo.hex(2)} .... ';
+        var str = '${(0x200 + pc).hex(3)}:  ${hi.hex(2)} ${lo.hex(2)} ..... ';
         switch (o) {
             case 0x0:
                 switch (nnn) {
@@ -106,6 +111,7 @@ class CodeList extends Sprite{
                     case 0x0EE: str += 'RET';
                     default:    str += 'SYS  ${nnn.hex(3)}';
                 }
+
             case 0x1: str += 'JP   ${nnn.hex(3)}';
             case 0x2: str += 'CALL ${nnn.hex(3)}';
             case 0x3: str += 'SE   V${x.hex(1)}, ${kk.hex(2)}';
@@ -136,6 +142,7 @@ class CodeList extends Sprite{
                     case 0x9E: str += 'SKP  V${x.hex(1)}';
                     case 0xA1: str += 'SKNP V${x.hex(1)}';
                 }
+                
             case 0xF:
                 switch (kk) {
                     case 0x07: str += 'LD   V${x.hex(1)}, DT';
@@ -158,8 +165,8 @@ class CodeList extends Sprite{
 
 private class CodeLine extends TextField {
     
-    static var BACK_COLORS     = [ 0xFFFFFF, 0xABCDEF ];
-    static var TEXT_COLORS     = [ 0x000000, 0x000000 ];
+    static var BACK_COLORS     = [ 0x000000, 0x444444 ];
+    static var TEXT_COLORS     = [ 0xFFFFFF, 0xFFFFFF ];
     
     static var STATE_NORMAL    = 0;
     static var STATE_HIGHLITED = 1;
@@ -171,15 +178,12 @@ private class CodeLine extends TextField {
     
     public var highlight (default, set):Bool;
     function set_highlight(v) {
-        if (v != highlight) {
-            var s = v ? STATE_HIGHLITED : STATE_NORMAL;
-            backgroundColor = BACK_COLORS[s];
-            textColor       = TEXT_COLORS[s];
-        }
-        
+        var s = v ? STATE_HIGHLITED : STATE_NORMAL;
+        backgroundColor = BACK_COLORS[s];
+        textColor       = TEXT_COLORS[s];
+
         return highlight = v;
     }
-    
     
     
     public function new(parent, x, y, w, h) {

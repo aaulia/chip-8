@@ -3,6 +3,7 @@ package gui;
 import flash.display.Sprite;
 import flash.events.Event;
 import flash.events.MouseEvent;
+import flash.geom.Point;
 using Std;
 
 class ScrollBar extends Sprite {
@@ -34,7 +35,12 @@ class ScrollBar extends Sprite {
 
     public var maximum (default, set):Int = 100;
     function set_maximum(v) {
-        if (v <= 0) throw 'Invalid maximum value: $v';
+        if (v <  0) throw 'Invalid maximum value: $v';
+        if (v == 0) {
+            enabled = false;
+            return v;
+        }
+
         if (v == maximum) 
             return v;
 
@@ -54,6 +60,9 @@ class ScrollBar extends Sprite {
     var area   :Int;
     var handler:Int->Int->Void;
 
+    inline function add_event(p, e, f) p.addEventListener   (e, f, false, 0, true);
+    inline function rem_event(p, e, f) p.removeEventListener(e, f, false);
+
 
     public function new(parent, up, dn, md, hg, x, y, max = 100, ?scroll) {
         super();
@@ -70,7 +79,7 @@ class ScrollBar extends Sprite {
         maximum = max;
         handler = scroll;
         
-        btn_md.addEventListener(MouseEvent.MOUSE_DOWN, on_md_down, false, 0, true);
+        add_event(btn_md, MouseEvent.MOUSE_DOWN, on_md_down);
     }
 
     function on_up() {
@@ -87,16 +96,24 @@ class ScrollBar extends Sprite {
             handler(position, 1);
     }
     
+    var pin_stageY = 0;
+    var pin_md_y   = 0;
+
     function on_md_down(e:MouseEvent) {
-        stage.addEventListener(MouseEvent.MOUSE_MOVE, on_mouse_mv, false, 0, true);
-        stage.addEventListener(MouseEvent.MOUSE_UP,   on_mouse_up, false, 0, true);
+        pin_stageY = cast e.stageY;
+        pin_md_y   = cast btn_md.y;
+
+        add_event(stage, MouseEvent.MOUSE_MOVE, on_mouse_mv);
+        add_event(stage, MouseEvent.MOUSE_UP,   on_mouse_up);
     }
-    
+
     function on_mouse_mv(e:MouseEvent) { 
-        var py = e.stageY - (y + 22);
-        if (py < 0) py = 0;
+        var dy = e.stageY - pin_stageY;
+        var py = pin_md_y + dy - 22;
+
+        if (py <    0) py = 0;
         if (py > area) py = area;
-        
+
         btn_md.y = 22 + py;
         
         var prev = position;
@@ -107,8 +124,8 @@ class ScrollBar extends Sprite {
     }
     
     function on_mouse_up(e:MouseEvent) { 
-        stage.removeEventListener(MouseEvent.MOUSE_MOVE, on_mouse_mv, false);
-        stage.removeEventListener(MouseEvent.MOUSE_UP,   on_mouse_up, false);
+        rem_event(stage, MouseEvent.MOUSE_MOVE, on_mouse_mv);
+        rem_event(stage, MouseEvent.MOUSE_UP,   on_mouse_up);
     }
     
 }
