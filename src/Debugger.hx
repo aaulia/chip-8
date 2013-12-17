@@ -2,32 +2,15 @@ package ;
 
 import chip8.CPU;
 import flash.display.Bitmap;
-import flash.display.BitmapData;
+import flash.display.Sprite;
 import flash.events.Event;
 import flash.events.KeyboardEvent;
-import flash.text.Font;
-import flash.display.Sprite;
-import flash.ui.Keyboard;
 import gui.Button;
 import gui.ScrollBar;
-import haxe.io.Bytes;
+import res.Images;
 
 using Std;
 using StringTools;
-
-
-@:font("res/ttf/dina10px.ttf") class DinaFont extends Font {}
-@:bitmap("res/img/ui_window_base.png")   class UIWindowBase  extends BitmapData {}
-
-@:bitmap("res/img/ui_button_start.png")  class UIButtonStart extends BitmapData {}
-@:bitmap("res/img/ui_button_pause.png")  class UIButtonPause extends BitmapData {}
-@:bitmap("res/img/ui_button_stop.png")   class UIButtonStop  extends BitmapData {}
-@:bitmap("res/img/ui_button_step.png")   class UIButtonStep  extends BitmapData {}
-
-@:bitmap("res/img/ui_scroll_up.png")     class UIScrollUp    extends BitmapData {}
-@:bitmap("res/img/ui_scroll_dn.png")     class UIScrollDn    extends BitmapData {}
-@:bitmap("res/img/ui_scroll_md.png")     class UIScrollMd    extends BitmapData {}
-
 
 
 @:access(chip8.CPU) 
@@ -39,18 +22,8 @@ class Debugger extends Sprite {
     
     public inline function reset() chip8.reset();
     public inline function load(rom) {
+        if (running) stop();
         chip8.load(rom);
-        
-        //
-        // parse rom
-        //
-        var pc = 0x0;
-        while (pc < rom.length) {
-            trace(op_to_string(
-                pc, 
-                rom.get(pc++), 
-                rom.get(pc++)));
-        }
     }
     
     public inline function start() running = true;
@@ -66,7 +39,7 @@ class Debugger extends Sprite {
     var btn_pause:Button;
     var btn_stop :Button;
     var btn_step :Button;
-    var scr_opLst:ScrollBar;
+    var scrollbar:ScrollBar;
     
     
     public function new(cpu) {
@@ -80,29 +53,32 @@ class Debugger extends Sprite {
         wnd_main  = new Bitmap(new UIWindowBase(0, 0));
         addChild(wnd_main);
 
-
+        
+        
         btn_start = new Button   (this, UIButtonStart, 48, 48, 478, 276, on_start);
         btn_pause = new Button   (this, UIButtonPause, 48, 48, 478, 330, on_pause);
         btn_stop  = new Button   (this, UIButtonStop,  48, 48, 478, 384, on_stop);
         btn_step  = new Button   (this, UIButtonStep,  48, 48, 478, 438, on_step);
-        scr_opLst = new ScrollBar(this, UIScrollUp, UIScrollDn, UIScrollMd, 310, 446, 280);
+        scrollbar = new ScrollBar(this, UIScrollUp, UIScrollDn, UIScrollMd, 310, 446, 280, 100, on_scroll);
 
         btn_start.enabled = true;
         btn_pause.enabled = false;
         btn_stop .enabled = false;
         btn_step .enabled = true;
         
-
+        
+        
         addEventListener(Event.ADDED_TO_STAGE,     added_to_stage,     false, 0, true);
         addEventListener(Event.REMOVED_FROM_STAGE, removed_from_stage, false, 0, true);
     }
-
+    
     function on_start() {
         start();
         btn_start.enabled = false;
         btn_pause.enabled = true;
         btn_stop .enabled = true;
         btn_step .enabled = false;
+        scrollbar.enabled = false;
     }
 
     function on_pause() {
@@ -111,6 +87,7 @@ class Debugger extends Sprite {
         btn_pause.enabled = false;
         btn_stop .enabled = true;
         btn_step .enabled = true;
+        scrollbar.enabled = true;
     }
 
     function on_stop () {
@@ -119,11 +96,16 @@ class Debugger extends Sprite {
         btn_pause.enabled = false;
         btn_stop .enabled = false;
         btn_step .enabled = true;
+        scrollbar.enabled = true;
     }
 
     function on_step () {
-        if (running == false)
+        if (running == false) 
             chip8.tick();
+    }
+    
+    function on_scroll(position, delta) {
+        trace(position, delta);
     }
     
     function added_to_stage(e:Event) {
@@ -151,17 +133,17 @@ class Debugger extends Sprite {
     }
     
     
-    function op_to_string(p, h, l) {
+    function op_to_string(pc, hi, lo) {
         
-        var o = (h & 0xF0) >> 4;
-        var x = (h & 0x0F);
-        var y = (l & 0xF0) >> 4;
-        var b = (l & 0x0F);
+        var o = (hi & 0xF0) >> 4;
+        var x = (hi & 0x0F);
+        var y = (lo & 0xF0) >> 4;
+        var b = (lo & 0x0F);
         
-        var kk  = l;
-        var nnn = x << 8 | l;
+        var kk  = lo;
+        var nnn = x << 8 | lo;
         
-        var str = '|${(0x200 + p).hex(4)}| ${h.hex(2)}:${l.hex(2)} ';
+        var str = '|${(0x200 + pc).hex(4)}| ${hi.hex(2)}:${lo.hex(2)} ';
         switch (o) {
             case 0x0:
                 switch (nnn) {
