@@ -7,6 +7,7 @@ import flash.events.Event;
 import flash.events.KeyboardEvent;
 import gui.Button;
 import gui.CodeList;
+import gui.RegList;
 import gui.ScrollBar;
 import res.Images;
 
@@ -24,6 +25,12 @@ class Debugger extends Sprite {
     public inline function reset() {
         chip8.reset();
         lst_codes.reset();
+        lst_reg.update(
+            chip8.PC, 
+            chip8.I, 
+            chip8.DT, 
+            chip8.ST, 
+            chip8.V);
     }
     
     public function load(rom) {
@@ -32,6 +39,12 @@ class Debugger extends Sprite {
         
         chip8.load(rom);
         lst_codes.load(rom);
+        lst_reg.update(
+            chip8.PC, 
+            chip8.I, 
+            chip8.DT, 
+            chip8.ST, 
+            chip8.V);
     }
     
     public inline function start() running = true;
@@ -48,6 +61,7 @@ class Debugger extends Sprite {
     var btn_stop :Button;
     var btn_step :Button;
     var lst_codes:CodeList;
+    var lst_reg  :RegList;
 
 
     inline function add_event(p, e, f) p.addEventListener(e, f, false, 0, true);
@@ -68,6 +82,7 @@ class Debugger extends Sprite {
         btn_stop  = new Button  (this, UIButtonStop,  48, 48, 478, 384, on_stop);
         btn_step  = new Button  (this, UIButtonStep,  48, 48, 478, 438, on_step);
         lst_codes = new CodeList(this, 10, 280, 458, 310);
+        lst_reg   = new RegList (this, 543, 17);
 
         btn_start.enabled = true;
         btn_pause.enabled = false;
@@ -82,6 +97,12 @@ class Debugger extends Sprite {
     function update() {
         chip8.tick();
         lst_codes.position = (chip8.PC - 0x200) >> 1;
+        lst_reg.update(
+            chip8.PC, 
+            chip8.I, 
+            chip8.DT, 
+            chip8.ST, 
+            chip8.V);
     }
     
     function on_start() {

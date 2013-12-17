@@ -15,7 +15,7 @@ class Main {
         var debug = new Debugger(chip8);
         
         stage.addChild(debug);
-        debug.load(Bytes.ofData(new MAZE()));
+        debug.load(Bytes.ofData(new BRIX()));
     }
     
 }
