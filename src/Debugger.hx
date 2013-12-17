@@ -6,6 +6,7 @@ import flash.display.Sprite;
 import flash.events.Event;
 import flash.events.KeyboardEvent;
 import gui.Button;
+import gui.CodeList;
 import gui.ScrollBar;
 import res.Images;
 
@@ -20,10 +21,21 @@ class Debugger extends Sprite {
     var chip8:CPU;
 
     
-    public inline function reset() chip8.reset();
-    public inline function load(rom) {
-        if (running) stop();
-        chip8.load(rom);
+    public inline function reset() {
+        chip8    .reset();
+        codeList .reset();
+        scrollbar.reset();
+    }
+    
+    public function load(rom) {
+        if (running) 
+            stop();
+        
+        chip8   .load(rom);
+        codeList.load(rom);
+        
+        scrollbar.maximum = codeList.length - 1;
+        scrollbar.reset();
     }
     
     public inline function start() running = true;
@@ -34,12 +46,13 @@ class Debugger extends Sprite {
     }
     
     
-    var wnd_main :Bitmap;
+    var bmp_main :Bitmap;
     var btn_start:Button;
     var btn_pause:Button;
     var btn_stop :Button;
     var btn_step :Button;
     var scrollbar:ScrollBar;
+    var codeList :CodeList;
     
     
     public function new(cpu) {
@@ -50,8 +63,8 @@ class Debugger extends Sprite {
         chip8.gpu.view.y = 10;
         addChild(chip8.gpu.view);
         
-        wnd_main  = new Bitmap(new UIWindowBase(0, 0));
-        addChild(wnd_main);
+        bmp_main  = new Bitmap(new UIWindowBase(0, 0));
+        addChild(bmp_main);
 
         
         
@@ -60,6 +73,7 @@ class Debugger extends Sprite {
         btn_stop  = new Button   (this, UIButtonStop,  48, 48, 478, 384, on_stop);
         btn_step  = new Button   (this, UIButtonStep,  48, 48, 478, 438, on_step);
         scrollbar = new ScrollBar(this, UIScrollUp, UIScrollDn, UIScrollMd, 310, 446, 280, 100, on_scroll);
+        codeList  = new CodeList (this, 10, 280, 436, 310);
 
         btn_start.enabled = true;
         btn_pause.enabled = false;
@@ -70,6 +84,12 @@ class Debugger extends Sprite {
         
         addEventListener(Event.ADDED_TO_STAGE,     added_to_stage,     false, 0, true);
         addEventListener(Event.REMOVED_FROM_STAGE, removed_from_stage, false, 0, true);
+    }
+    
+    function update() {
+        chip8.tick();
+        codeList .PC       = chip8.PC;
+        scrollbar.position = (codeList.PC - 0x200) >> 1;
     }
     
     function on_start() {
@@ -101,11 +121,11 @@ class Debugger extends Sprite {
 
     function on_step () {
         if (running == false) 
-            chip8.tick();
+            update();
     }
     
     function on_scroll(position, delta) {
-        trace(position, delta);
+        codeList.scroll = position;
     }
     
     function added_to_stage(e:Event) {
@@ -124,79 +144,12 @@ class Debugger extends Sprite {
         if (running == false) 
             return;
             
-        chip8.tick();
+        update();
     }
     
     function on_key(e:KeyboardEvent) {
         var v = (e.type == KeyboardEvent.KEY_DOWN) ? 1 : 0;
         chip8.key.set(e.keyCode, v);
-    }
-    
-    
-    function op_to_string(pc, hi, lo) {
-        
-        var o = (hi & 0xF0) >> 4;
-        var x = (hi & 0x0F);
-        var y = (lo & 0xF0) >> 4;
-        var b = (lo & 0x0F);
-        
-        var kk  = lo;
-        var nnn = x << 8 | lo;
-        
-        var str = '|${(0x200 + pc).hex(4)}| ${hi.hex(2)}:${lo.hex(2)} ';
-        switch (o) {
-            case 0x0:
-                switch (nnn) {
-                    case 0x0E0: str += 'CLS';
-                    case 0x0EE: str += 'RET';
-                    default:    str += 'SYS  ${nnn.hex(3)}';
-                }
-            case 0x1: str += 'JP   ${nnn.hex(3)}';
-            case 0x2: str += 'CALL ${nnn.hex(3)}';
-            case 0x3: str += 'SE   V${x.hex(1)}, ${kk.hex(2)}';
-            case 0x4: str += 'SNE  V${x.hex(1)}, ${kk.hex(2)}';
-            case 0x5: str += 'SE   V${x.hex(1)}, V${y.hex(1)}';
-            case 0x6: str += 'LD   V${x.hex(1)}, ${kk.hex(2)}';
-            case 0x7: str += 'ADD  V${x.hex(1)}, ${kk.hex(2)}';
-            case 0x8: 
-                switch (b) {
-                    case 0x0: str += 'LD   V${x.hex(1)}, V${y.hex(1)}';
-                    case 0x1: str += 'OR   V${x.hex(1)}, V${y.hex(1)}';
-                    case 0x2: str += 'AND  V${x.hex(1)}, V${y.hex(1)}';
-                    case 0x3: str += 'XOR  V${x.hex(1)}, V${y.hex(1)}';
-                    case 0x4: str += 'ADD  V${x.hex(1)}, V${y.hex(1)}';
-                    case 0x5: str += 'SUB  V${x.hex(1)}, V${y.hex(1)}';
-                    case 0x6: str += 'SHR  V${x.hex(1)}, V${y.hex(1)}';
-                    case 0x7: str += 'SUBN V${x.hex(1)}, V${y.hex(1)}';
-                    case 0xE: str += 'SHL  V${x.hex(1)}, V${y.hex(1)}';
-                }
-                
-            case 0x9: str += 'SNE  V${x.hex(1)}, V${y.hex(1)}';
-            case 0xA: str += 'LD    I, ${nnn.hex(3)}';
-            case 0xB: str += 'JP   V0, ${nnn.hex(3)}';
-            case 0xC: str += 'RND  V${x.hex(1)}, ${kk.hex(2)}';
-            case 0xD: str += 'DRW  V${x.hex(1)}, V${y.hex(1)}, ${b.hex(1)}';
-            case 0xE: 
-                switch (kk) {
-                    case 0x9E: str += 'SKP  V${x.hex(1)}';
-                    case 0xA1: str += 'SKNP V${x.hex(1)}';
-                }
-            case 0xF:
-                switch (kk) {
-                    case 0x07: str += 'LD   V${x.hex(1)}, DT';
-                    case 0x0A: str += 'LD   V${x.hex(1)}, KP';
-                    case 0x15: str += 'LD   DT, V${x.hex(1)}';
-                    case 0x18: str += 'LD   ST, V${x.hex(1)}';
-                    case 0x1E: str += 'ADD   I, V${x.hex(1)}';
-                    case 0x29: str += 'LD    F, V${x.hex(1)}';
-                    case 0x33: str += 'LD    B, V${x.hex(1)}';
-                    case 0x55: str += 'LD  [I], V${x.hex(1)}';
-                    case 0x65: str += 'LD   V${x.hex(1)}, [I]';
-                        
-                }
-        }
-        
-        return str;
     }
     
 }
