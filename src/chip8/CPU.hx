@@ -14,6 +14,7 @@ class CPU {
     static inline var RAM_SIZE =  4096;
     static inline var PC_START = 0x200;
     static inline var FONT_POS = 0x050;
+    static inline var CYC_60HZ = 16.67;
 
     static inline var A = 0xA;
     static inline var B = 0xB;
@@ -63,12 +64,14 @@ class CPU {
     var op_map:Vector<OpHandler>;
     var gpu:GPU;
     var key:KEY;
-
+    var acc:Int;
+    
     
 
     public function new(video, input) {
         gpu   = video;
         key   = input;
+        acc   = 0;
         RAM   = Bytes.alloc(RAM_SIZE);
         STACK = [];
         V     = new Vector<Int>(16);
@@ -87,7 +90,6 @@ class CPU {
     }
 
     public function reset() {
-
         for (pos in 0...16) V[pos] = 0;
 
         STACK = [];
@@ -104,8 +106,7 @@ class CPU {
         RAM.blit(PC_START, rom, 0, rom.length);
     }
 
-    public function cycle() {
-
+    public function cycle(s = 1) {
         if (key.wait) {
             return;
         }
@@ -121,8 +122,18 @@ class CPU {
             (p & 0x0FF), 
             p);
         
-        if (DT > 0) DT--;
-        if (ST > 0) ST--;
+            
+        acc += (CYC_60HZ / s).int();
+        if (acc > 1000) {
+            if (DT > 0) DT--;
+            if (ST > 0) {
+                //
+                // TODO: Play sound
+                //
+                ST--;
+            }
+            acc &= 999;
+        }
     }
 
     inline function op_0x0(x, y, b, kk, nnn) { 

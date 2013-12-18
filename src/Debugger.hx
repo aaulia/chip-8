@@ -94,8 +94,8 @@ class Debugger extends Sprite {
         add_event(this, Event.REMOVED_FROM_STAGE, removed_from_stage);
     }
     
-    function update() {
-        chip8.cycle();
+    function update(s = 1) {
+        for (i in 0...s) chip8.cycle(s);
         lst_codes.position = (chip8.PC - 0x200) >> 1;
         lst_reg.update(
             chip8.PC, 
@@ -153,7 +153,7 @@ class Debugger extends Sprite {
         if (running == false) 
             return;
             
-        update();
+        update(5);
     }
     
     function on_key(e:KeyboardEvent) {
