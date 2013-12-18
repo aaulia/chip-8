@@ -3,10 +3,12 @@ package chip8;
 import haxe.ds.IntMap;
 import haxe.io.Bytes;
 import haxe.ds.Vector;
+
 using Std;
+using StringTools;
+
 
 typedef OpHandler = Int->Int->Int->Int->Int->Void;
-
 class CPU {
 
     static inline var RAM_SIZE =  4096;
@@ -197,11 +199,17 @@ class CPU {
     inline function op_0xB(x, y, b, kk, nnn) PC   = nnn + V[0];
     inline function op_0xC(x, y, b, kk, nnn) V[x] = (Math.random() * 0xFF).int() & kk;
 
-    inline function op_0xD(x, y, b:Int, kk, nnn) { 
+    inline function op_0xD(x:Int, y:Int, b:Int, kk, nnn) { 
         
         V[F]  = 0;
         var j = V[y];
         for (pos in 0...b) {
+
+            /*
+             * HACK: Should this be % and not clipped?
+             * PURPOSE: So BLITZ can run correctly.
+             */
+            if (j < 0 || j >= 32) break;
 
             var m = RAM.get(I + pos);
             var i = V[x];
