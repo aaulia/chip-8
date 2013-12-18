@@ -1,6 +1,7 @@
 package gui;
 
 import flash.display.Sprite;
+import flash.text.AntiAliasType;
 import flash.text.TextField;
 import flash.text.TextFieldAutoSize;
 import flash.text.TextFormat;
@@ -38,7 +39,7 @@ class RegList extends Sprite {
     ];
 
     static var DEFAULT_FONT   = new DinaFont();
-    static var DEFAULT_FORMAT = new TextFormat(DEFAULT_FONT.fontName, 24, 0x000000);
+    static var DEFAULT_FORMAT = new TextFormat(DEFAULT_FONT.fontName, 26, 0x000000);
 
     var texts:Array<TextField>;
 
@@ -57,6 +58,7 @@ class RegList extends Sprite {
             t.embedFonts        = true;
             t.autoSize          = TextFieldAutoSize.NONE;
             t.selectable        = false;
+            t.antiAliasType     = AntiAliasType.ADVANCED;
 
             t.x      = (i % 2) * 120;
             t.y      = (i / 2).int() * 26 + (i >= 4 ? 10 : 0);

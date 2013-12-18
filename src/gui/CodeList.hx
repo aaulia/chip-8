@@ -2,6 +2,7 @@ package gui;
 
 import flash.display.Sprite;
 import flash.geom.Rectangle;
+import flash.text.AntiAliasType;
 import flash.text.TextField;
 import flash.text.TextFieldAutoSize;
 import flash.text.TextFormat;
@@ -172,7 +173,7 @@ private class CodeLine extends TextField {
     static var STATE_HIGHLITED = 1;
     
     static var DEFAULT_FONT    = new DinaFont();
-    static var DEFAULT_FORMAT  = new TextFormat(DEFAULT_FONT.fontName, 24, 0x000000);
+    static var DEFAULT_FORMAT  = new TextFormat(DEFAULT_FONT.fontName, 26, 0x000000);
     
     
     
@@ -203,6 +204,7 @@ private class CodeLine extends TextField {
         embedFonts        = true;
         autoSize          = TextFieldAutoSize.NONE;
         selectable        = false;
+        antiAliasType     = AntiAliasType.ADVANCED;
     }
     
 }
