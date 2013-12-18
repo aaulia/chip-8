@@ -95,7 +95,7 @@ class Debugger extends Sprite {
     }
     
     function update() {
-        chip8.tick();
+        chip8.cycle();
         lst_codes.position = (chip8.PC - 0x200) >> 1;
         lst_reg.update(
             chip8.PC, 

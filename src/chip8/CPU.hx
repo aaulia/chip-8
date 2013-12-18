@@ -104,7 +104,7 @@ class CPU {
         RAM.blit(PC_START, rom, 0, rom.length);
     }
 
-    public function tick() {
+    public function cycle() {
 
         if (key.wait) {
             return;
