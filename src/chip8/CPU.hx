@@ -97,9 +97,9 @@ class CPU {
         DT    = 0;
         ST    = 0;
         PC    = PC_START;
-        
-        gpu.cls();
-        gpu.flip();
+
+        gpu.reset();
+        key.reset();        
     }
 
     public function load(rom:Bytes) {

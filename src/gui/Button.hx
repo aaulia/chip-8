@@ -59,7 +59,7 @@ class Button extends Sprite {
 
         addEventListener(MouseEvent.MOUSE_DOWN, on_mouse_down, false, 0, true);
         if (click != null) 
-            addEventListener(MouseEvent.CLICK, function (e) click(), false, 0, true);
+            addEventListener(MouseEvent.CLICK, function (e) click());
 
     }
 

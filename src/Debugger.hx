@@ -18,6 +18,8 @@ using StringTools;
 @:access(chip8.CPU) 
 class Debugger extends Sprite {
 
+    static inline var SPEED_MULTIPLIER = 8;
+
     var running:Bool;
     var chip8:CPU;
 
@@ -96,7 +98,7 @@ class Debugger extends Sprite {
     
     function update(s = 1) {
         for (i in 0...s) chip8.cycle(s);
-        lst_codes.position = (chip8.PC - 0x200) >> 1;
+        lst_codes.position = (chip8.PC - 0x200);
         lst_reg.update(
             chip8.PC, 
             chip8.I, 
@@ -153,7 +155,7 @@ class Debugger extends Sprite {
         if (running == false) 
             return;
             
-        update(5);
+        update(SPEED_MULTIPLIER);
     }
     
     function on_key(e:KeyboardEvent) {

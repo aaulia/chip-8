@@ -6,6 +6,7 @@ import flash.text.AntiAliasType;
 import flash.text.TextField;
 import flash.text.TextFieldAutoSize;
 import flash.text.TextFormat;
+import flash.text.TextFormatAlign;
 import res.Fonts;
 import res.Images;
 
@@ -16,27 +17,41 @@ class CodeList extends Sprite{
 
     var scbar:ScrollBar;
     var lists:Sprite;
-    var codes:Array<CodeLine>;
+    var lines:Sprite;
+    var codes:Array<CodeBlock>;
+    var rows :Array<CodeBlock>;
+    var cols :Array<CodeBlock>;
     var frame:Rectangle;
 
+
+    function highlight(p, v) {
+        var h = (frame.width / 36).int() - 1;
+        var r = (p / h).int();
+        var c = (p % h);
+
+        codes[p].highlight = v;
+        rows [r].highlight = v;
+        cols [c].highlight = v;
+    }
 
     public var position (default, set):Int;
     function set_position(v) {
         if (v <  0) v = 0;
         if (v >= codes.length) v = codes.length - 1;
 
-        codes[position].highlight = false;
+        highlight(position + 0, false);
+        highlight(position + 1, false);
         position = v;
-        codes[position].highlight = true;
+        highlight(position + 0, true);
+        highlight(position + 1, true);
 
-        var ch = codes.length * 26;
+        var ch = lists.height.int();
         var cy = (codes[position].y - (frame.height - 26) / 2).int();
         
         if (cy < 0) cy = 0;
-        if (cy > (ch - frame.height)) cy = ch - cast frame.height;
+        if (cy > (ch - frame.height)) cy = ch - frame.height.int();
 
-        frame.y = cy;
-        lists.scrollRect = frame;
+        lists.y = -cy;
         scbar.position = cy;
 
         return v;
@@ -44,7 +59,7 @@ class CodeList extends Sprite{
 
     public var enabled (default, set):Bool;
     function set_enabled(v) {
-        var ch = codes.length * 26;
+        var ch = lists.height;
         scbar.enabled = v && (ch > frame.height);
         return v;
     }
@@ -54,33 +69,60 @@ class CodeList extends Sprite{
         super();
         parent.addChild(this);
 		
-        lists = cast addChild(new Sprite());
+        lists = new Sprite();
+        lines = cast lists.addChild(new Sprite());
         codes = [];
-        frame = new Rectangle(0, 0, w - 22, h);
+        rows  = [];
+        cols  = [];
+        frame = new Rectangle(0, 0, w - 22, h - 26);
         scbar = new ScrollBar(this, UIScrollUp, UIScrollDn, UIScrollMd, h.int(), w - 22, 0, 100, on_scroll);
         
         this.x = x;
         this.y = y;
-        lists.scrollRect = frame;
+
+        var area:Sprite = cast addChild(new Sprite());
+        area.x = 0;
+        area.y = 26;
+        area.scrollRect = frame;
+        area.addChild(lists);
+
+        var c = (frame.width / 36).int() - 1;
+        for (i in 0...c) {
+            var m  = new CodeBlock(this, (i + 1) * 36, 0, 36, 26, 0x444444);
+            m.text = i.hex(2);
+            cols.push(m);
+        }
     }
     
     public function load(rom) {
         codes = [];
-        
-        var i = 0;
+        rows  = [];
+
+        var h = (frame.width / 36).int() - 1;
         var p = 0;
         while (p < rom.length) {
-            codes[i] = new CodeLine(lists, 0, i * 26, frame.width, 26);
-            codes[i].text = op_to_string(p, rom.get(p++), rom.get(p++));
-            codes[i].highlight = false;
-            i++;
+            
+            var o:Int = rom.get(p);
+            var c = (p % h);
+            var r = (p / h).int();
+
+            if (c == 0) {
+                var m  = new CodeBlock(lines, 0, r * 26, 36, 26, 0x444444);
+                m.text = (r * h).hex(2);
+                rows.push(m);
+            }
+
+            codes[p] = new CodeBlock(lists, (c + 1) * 36, r * 26, 36, 26);
+            codes[p].highlight = false;
+            codes[p].text = o.hex(2);
+            p++;
         }
      
         reset();
     }
 
     public function reset() {
-        var ch = codes.length * 26;
+        var ch = lists.height;
         if (scbar.enabled = (ch > frame.height))
             scbar.maximum = (ch - frame.height).int();
 
@@ -88,12 +130,8 @@ class CodeList extends Sprite{
     }
 
 
+    function on_scroll(pos, delta) lists.y = -pos;
 
-    function on_scroll(pos, delta) {
-        frame.y = pos;
-        lists.scrollRect = frame;
-    }
-    
     function op_to_string(pc, hi, lo) {
         
         var o = (hi & 0xF0) >> 4;
@@ -164,30 +202,22 @@ class CodeList extends Sprite{
         
 }
 
-private class CodeLine extends TextField {
+private class CodeBlock extends TextField {
     
-    static var BACK_COLORS     = [ 0x000000, 0x444444 ];
-    static var TEXT_COLORS     = [ 0xFFFFFF, 0xFFFFFF ];
-    
-    static var STATE_NORMAL    = 0;
-    static var STATE_HIGHLITED = 1;
-    
-    static var DEFAULT_FONT    = new DinaFont();
-    static var DEFAULT_FORMAT  = new TextFormat(DEFAULT_FONT.fontName, 26, 0x000000);
-    
+    static var DEFAULT_FONT   = new DinaFont();
+    static var DEFAULT_FORMAT = new TextFormat(
+        DEFAULT_FONT.fontName, 
+        26, 0x000000, false, false, false, "", "", 
+        TextFormatAlign.CENTER);
     
     
     public var highlight (default, set):Bool;
     function set_highlight(v) {
-        var s = v ? STATE_HIGHLITED : STATE_NORMAL;
-        backgroundColor = BACK_COLORS[s];
-        textColor       = TEXT_COLORS[s];
-
-        return highlight = v;
+        return background = highlight = v;
     }
     
     
-    public function new(parent, x, y, w, h) {
+    public function new(parent, x, y, w, h, hb = 0x89ABCD) {
         super();
         
         parent.addChild(this);
@@ -197,9 +227,8 @@ private class CodeLine extends TextField {
         height = h;
         text   = '';
         
-        background        = true;
-        backgroundColor   = BACK_COLORS[ STATE_NORMAL ];
-        textColor         = TEXT_COLORS[ STATE_NORMAL ];
+        background        = false;
+        backgroundColor   = hb;
         defaultTextFormat = DEFAULT_FORMAT;
         embedFonts        = true;
         autoSize          = TextFieldAutoSize.NONE;

@@ -34,10 +34,8 @@ class KEY {
     var retf:Int->Void;
 
     public function new() {
-        wait = false;
-        keys = [ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ];
         kmap = DEFAULT_KEYMAP.copy();
-        retf = null;
+        reset();
     }
 
     public inline function map(key, code) {
@@ -65,6 +63,12 @@ class KEY {
     public inline function ask(f:Int->Void) {
         wait = true;
         retf = f;
+    }
+
+    public inline function reset() {
+        wait = false;
+        keys = [ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ];
+        retf = null;
     }
 
 }

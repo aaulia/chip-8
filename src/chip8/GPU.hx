@@ -45,6 +45,11 @@ class GPU {
         view.bitmapData.copyPixels(vram, vram.rect, TOP_LEFT);
     }
 
+    public inline function reset() {
+        cls ();
+        flip();
+    }
+
     inline function wrap(c, s) {
         c %= s;
         return (c < 0) ? (c + s) : c;
