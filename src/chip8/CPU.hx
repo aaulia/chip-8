@@ -14,7 +14,6 @@ class CPU {
     static inline var RAM_SIZE =  4096;
     static inline var PC_START = 0x200;
     static inline var FONT_POS = 0x050;
-    static inline var CYC_60HZ = 16.67;
 
     static inline var A = 0xA;
     static inline var B = 0xB;
@@ -65,13 +64,15 @@ class CPU {
     var gpu:GPU;
     var key:KEY;
     var acc:Int;
+    var cyc:Float;
     
     
 
-    public function new(video, input) {
+    public function new(video, input, rate) {
         gpu   = video;
         key   = input;
         acc   = 0;
+        cyc   = 1000 / rate;
         RAM   = Bytes.alloc(RAM_SIZE);
         STACK = [];
         V     = new Vector<Int>(16);
@@ -103,13 +104,17 @@ class CPU {
     }
 
     public function load(rom:Bytes) {
+        unload();
         RAM.blit(PC_START, rom, 0, rom.length);
     }
 
+    public function unload() {
+        reset();
+        for (pos in PC_START...RAM_SIZE) RAM.set(pos, 0);
+    }
+
     public function cycle(s = 1) {
-        if (key.wait) {
-            return;
-        }
+        if (key.wait) return;
 
         var m = (RAM.get(PC++) << 8) | RAM.get(PC++);
         var o = (m & 0xF000) >> 12;
@@ -123,7 +128,7 @@ class CPU {
             p);
         
             
-        acc += (CYC_60HZ / s).int();
+        acc += (cyc / s).int();
         if (acc > 1000) {
             if (DT > 0) DT--;
             if (ST > 0) {
@@ -242,8 +247,8 @@ class CPU {
 
     inline function op_0xE(x, y, b, kk, nnn) { 
         switch (kk) {
-            case 0x9E: if (key.get(V[x]) == 1) PC += 2;
-            case 0xA1: if (key.get(V[x]) != 1) PC += 2;
+            case 0x9E: if (key.get(V[x]) == true) PC += 2;
+            case 0xA1: if (key.get(V[x]) != true) PC += 2;
         }
     }
     

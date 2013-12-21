@@ -7,8 +7,10 @@ import flash.events.Event;
 import flash.events.KeyboardEvent;
 import gui.Button;
 import gui.CodeList;
+import gui.KeyMap;
 import gui.RegList;
 import gui.ScrollBar;
+import haxe.io.Bytes;
 import res.Images;
 
 using Std;
@@ -18,35 +20,42 @@ using StringTools;
 @:access(chip8.CPU) 
 class Debugger extends Sprite {
 
-    static inline var SPEED_MULTIPLIER = 8;
+    static inline var SPEED_MULTIPLIER = 10;
 
     var running:Bool;
     var chip8:CPU;
+    var rom_data:Bytes;
 
     
     public inline function reset() {
-        chip8.reset();
+        chip8    .reset();
         lst_codes.reset();
-        lst_reg.update(
-            chip8.PC, 
-            chip8.I, 
-            chip8.DT, 
-            chip8.ST, 
-            chip8.V);
     }
     
     public function load(rom) {
         if (running) 
             stop();
         
-        chip8.load(rom);
-        lst_codes.load(rom);
-        lst_reg.update(
-            chip8.PC, 
-            chip8.I, 
-            chip8.DT, 
-            chip8.ST, 
-            chip8.V);
+        unload();
+
+        rom_data = Bytes.ofData(Type.createInstance(rom, []));
+        chip8    .load(rom_data);
+        lst_codes.load(rom_data);
+
+        btn_start.enabled = true;
+        btn_pause.enabled = false;
+        btn_stop .enabled = false;
+        btn_step .enabled = true;
+    }
+
+    public function unload() {
+        chip8    .unload();
+        lst_codes.unload();
+
+        btn_start.enabled = false;
+        btn_pause.enabled = false;
+        btn_stop .enabled = false;
+        btn_step .enabled = false;
     }
     
     public inline function start() running = true;
@@ -64,6 +73,7 @@ class Debugger extends Sprite {
     var btn_step :Button;
     var lst_codes:CodeList;
     var lst_reg  :RegList;
+    var map_keys :KeyMap;
 
 
     inline function add_event(p, e, f) p.addEventListener(e, f, false, 0, true);
@@ -85,11 +95,12 @@ class Debugger extends Sprite {
         btn_step  = new Button  (this, UIButtonStep,  48, 48, 478, 438, on_step);
         lst_codes = new CodeList(this, 10, 280, 458, 310);
         lst_reg   = new RegList (this, 543, 17);
+        map_keys  = new KeyMap  (this, 558, 358);
 
-        btn_start.enabled = true;
+        btn_start.enabled = false;
         btn_pause.enabled = false;
         btn_stop .enabled = false;
-        btn_step .enabled = true;
+        btn_step .enabled = false;
         
 
         add_event(this, Event.ADDED_TO_STAGE, added_to_stage);
@@ -99,12 +110,6 @@ class Debugger extends Sprite {
     function update(s = 1) {
         for (i in 0...s) chip8.cycle(s);
         lst_codes.position = (chip8.PC - 0x200);
-        lst_reg.update(
-            chip8.PC, 
-            chip8.I, 
-            chip8.DT, 
-            chip8.ST, 
-            chip8.V);
     }
     
     function on_start() {
@@ -135,6 +140,7 @@ class Debugger extends Sprite {
     }
 
     function on_step () {
+        lst_reg.update(chip8.PC, chip8.I, chip8.DT, chip8.ST, chip8.V);
         if (running == false) 
             update();
     }
@@ -152,6 +158,7 @@ class Debugger extends Sprite {
     }
     
     function on_frame(e:Event) {
+        lst_reg.update(chip8.PC, chip8.I, chip8.DT, chip8.ST, chip8.V);
         if (running == false) 
             return;
             
@@ -161,6 +168,9 @@ class Debugger extends Sprite {
     function on_key(e:KeyboardEvent) {
         var v = (e.type == KeyboardEvent.KEY_DOWN) ? 1 : 0;
         chip8.key.set(e.keyCode, v);
+
+        for (i in 0...16)
+            map_keys.set(i, chip8.key.get(i));
     }
     
 }

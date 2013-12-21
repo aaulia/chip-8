@@ -36,6 +36,9 @@ class CodeList extends Sprite{
 
     public var position (default, set):Int;
     function set_position(v) {
+        if (codes.length == 0)
+            return position = v;
+
         if (v <  0) v = 0;
         if (v >= codes.length) v = codes.length - 1;
 
@@ -48,8 +51,8 @@ class CodeList extends Sprite{
         var ch = lists.height.int();
         var cy = (codes[position].y - (frame.height - 26) / 2).int();
         
+        if (cy > (ch - (frame.height - 26))) cy = ch - (frame.height - 26).int();
         if (cy < 0) cy = 0;
-        if (cy > (ch - frame.height)) cy = ch - frame.height.int();
 
         lists.y = -cy;
         scbar.position = cy;
@@ -95,8 +98,7 @@ class CodeList extends Sprite{
     }
     
     public function load(rom) {
-        codes = [];
-        rows  = [];
+        unload();
 
         var h = (frame.width / 36).int() - 1;
         var p = 0;
@@ -127,6 +129,12 @@ class CodeList extends Sprite{
             scbar.maximum = (ch - frame.height).int();
 
         position = 0;
+    }
+
+    public function unload() {
+        codes = [];
+        rows  = [];
+        reset();
     }
 
 
@@ -234,6 +242,7 @@ private class CodeBlock extends TextField {
         autoSize          = TextFieldAutoSize.NONE;
         selectable        = false;
         antiAliasType     = AntiAliasType.ADVANCED;
+        cacheAsBitmap     = false;
     }
     
 }

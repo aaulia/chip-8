@@ -57,7 +57,7 @@ class KEY {
     }
 
     public inline function get(key) {
-        return keys[key];
+        return keys[key] == 1;
     }
 
     public inline function ask(f:Int->Void) {
