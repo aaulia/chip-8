@@ -6,30 +6,47 @@ import flash.display.Sprite;
 import flash.events.Event;
 import flash.events.MouseEvent;
 import flash.geom.Rectangle;
+import flash.text.AntiAliasType;
+import flash.text.TextField;
+import flash.text.TextFieldAutoSize;
+import flash.text.TextFormat;
+import flash.text.TextFormatAlign;
+import res.Fonts.Dina;
 
 using Std;
 
 class Button extends Sprite {
 
-    static inline var STATE_UP       = 0;
-    static inline var STATE_DOWN     = 1;
-    static inline var STATE_DISABLED = 2;
+    static var DEFAULT_FORMAT = new TextFormat(
+        Dina.fontName, 22, 0x000000, 
+        false, false, false, "", "", 
+        TextFormatAlign.CENTER);
+
+    inline static var STATE_UP       = 0;
+    inline static var STATE_DOWN     = 1;
+    inline static var STATE_DISABLED = 2;
+
+
 
     public var enabled (default, set):Bool;
-
-    inline function set_enabled(v) {
+    function set_enabled(v) {
         mouseEnabled      = v;
         mouseChildren     = v;
         buttonMode        = v;
         bitmap.scrollRect = frames[(v == true) ? STATE_UP : STATE_DISABLED];
+        label .textColor  = (v == true) ? 0x000000 : 0x666666;
 
         return enabled = v;
     }
 
+
+
+    var label :TextField;
     var bitmap:Bitmap;
     var frames:Array<Rectangle>;
 
-    public function new(parent, image, w, h, x, y, ?click) {
+
+    public function new(parent, image, w, h, x, y, text = "", ?click) {
         super();
         parent.addChild(this);
 
@@ -38,6 +55,7 @@ class Button extends Sprite {
         var hc = (data.width  / w).int();
         var vc = (data.height / h).int();
 
+        label  = new TextField();
         bitmap = new Bitmap(data);
         frames = [];
 
@@ -51,6 +69,19 @@ class Button extends Sprite {
 
         bitmap.scrollRect = frames[STATE_UP];
         addChild(bitmap);
+
+        label.defaultTextFormat = DEFAULT_FORMAT;
+        label.selectable = false;
+        label.cacheAsBitmap = false;
+        label.autoSize = TextFieldAutoSize.NONE;
+        label.text = text;
+        label.antiAliasType = AntiAliasType.ADVANCED;
+        label.width  = w;
+        label.height = 32;
+        label.embedFonts = true;
+        label.x = 0;
+        label.y = (h - 22) >> 1;
+        addChild(label);
 
         this.buttonMode = true;
         this.useHandCursor = true;

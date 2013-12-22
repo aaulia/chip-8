@@ -5,8 +5,10 @@ import flash.text.AntiAliasType;
 import flash.text.TextField;
 import flash.text.TextFieldAutoSize;
 import flash.text.TextFormat;
+import flash.text.TextFormatAlign;
 import haxe.ds.Vector.Vector;
 import res.Fonts;
+import res.Fonts.Dina;
 
 using Std;
 using StringTools;
@@ -38,8 +40,10 @@ class RegList extends Sprite {
         "V7: ", "VF: ",
     ];
 
-    static var DEFAULT_FONT   = new DinaFont();
-    static var DEFAULT_FORMAT = new TextFormat(DEFAULT_FONT.fontName, 26, 0x000000);
+    static var DEFAULT_FORMAT = new TextFormat(
+        Dina.fontName, 26, 0x000000, 
+        false, false, false, "", "",
+        TextFormatAlign.LEFT);
 
     var texts:Array<TextField>;
 

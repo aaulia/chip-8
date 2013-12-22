@@ -7,6 +7,7 @@ import flash.text.TextFieldAutoSize;
 import flash.text.AntiAliasType;
 import flash.text.TextFormatAlign;
 import res.Fonts;
+import res.Fonts.Dina;
 
 using Lambda;
 
@@ -31,9 +32,8 @@ class KeyMap extends Sprite {
         0x3, 0x7, 0xB, 0xF
     ];
 
-    static var FONT    = new DinaFont();
     static var FORMAT  = new TextFormat(
-        FONT.fontName,
+        Dina.fontName,
         32, NORMAL, false, false, false, "", "",
         TextFormatAlign.CENTER);
 

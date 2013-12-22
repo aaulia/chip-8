@@ -9,6 +9,7 @@ import gui.Button;
 import gui.CodeList;
 import gui.KeyMap;
 import gui.RegList;
+import gui.RomSelect;
 import gui.ScrollBar;
 import haxe.io.Bytes;
 import res.Images;
@@ -22,8 +23,8 @@ class Debugger extends Sprite {
 
     static inline var SPEED_MULTIPLIER = 10;
 
-    var running:Bool;
-    var chip8:CPU;
+    var running :Bool;
+    var chip8   :CPU;
     var rom_data:Bytes;
 
     
@@ -38,6 +39,9 @@ class Debugger extends Sprite {
         
         unload();
 
+        if (rom == null)
+            return;
+
         rom_data = Bytes.ofData(Type.createInstance(rom, []));
         chip8    .load(rom_data);
         lst_codes.load(rom_data);
@@ -49,6 +53,8 @@ class Debugger extends Sprite {
     }
 
     public function unload() {
+        rom_data = null;
+
         chip8    .unload();
         lst_codes.unload();
 
@@ -66,36 +72,43 @@ class Debugger extends Sprite {
     }
     
     
-    var bmp_main :Bitmap;
-    var btn_start:Button;
-    var btn_pause:Button;
-    var btn_stop :Button;
-    var btn_step :Button;
-    var lst_codes:CodeList;
-    var lst_reg  :RegList;
-    var map_keys :KeyMap;
+    var bmp_main  :Bitmap;
+    var dlg_select:RomSelect;
+    
+    var btn_start :Button;
+    var btn_pause :Button;
+    var btn_stop  :Button;
+    var btn_step  :Button;
+    var btn_load  :Button;
+
+    var lst_codes :CodeList;
+    var lst_reg   :RegList;
+    var map_keys  :KeyMap;
+
 
 
     inline function add_event(p, e, f) p.addEventListener(e, f, false, 0, true);
     inline function rem_event(p, e, f) p.removeEventListener(e, f, false);
 
-    public function new(cpu) {
+    public function new(parent, cpu) {
         super();
-        
+
         chip8 = cpu;
         chip8.gpu.view.x = 10;
         chip8.gpu.view.y = 10;
         addChild(chip8.gpu.view);
 
         
-        bmp_main  = cast addChild(new Bitmap(new UIWindowBase(0, 0)));
-        btn_start = new Button  (this, UIButtonStart, 48, 48, 478, 276, on_start);
-        btn_pause = new Button  (this, UIButtonPause, 48, 48, 478, 330, on_pause);
-        btn_stop  = new Button  (this, UIButtonStop,  48, 48, 478, 384, on_stop);
-        btn_step  = new Button  (this, UIButtonStep,  48, 48, 478, 438, on_step);
-        lst_codes = new CodeList(this, 10, 280, 458, 310);
-        lst_reg   = new RegList (this, 543, 17);
-        map_keys  = new KeyMap  (this, 558, 358);
+        bmp_main   = cast addChild(new Bitmap(new UIWindowBase(0, 0)));
+        btn_start  = new Button   (this, UIButtonStart, 48, 48, 478, 276, on_start);
+        btn_pause  = new Button   (this, UIButtonPause, 48, 48, 478, 330, on_pause);
+        btn_stop   = new Button   (this, UIButtonStop,  48, 48, 478, 384, on_stop);
+        btn_step   = new Button   (this, UIButtonStep,  48, 48, 478, 438, on_step);
+        btn_load   = new Button   (this, UIButtonLoad,  48, 48, 478, 492, on_load);
+        lst_codes  = new CodeList (this, 10, 280, 458, 310);
+        lst_reg    = new RegList  (this, 560, 40);
+        map_keys   = new KeyMap   (this, 558, 358);
+        dlg_select = new RomSelect(on_rom_select, on_rom_cancel);
 
         btn_start.enabled = false;
         btn_pause.enabled = false;
@@ -105,6 +118,8 @@ class Debugger extends Sprite {
 
         add_event(this, Event.ADDED_TO_STAGE, added_to_stage);
         add_event(this, Event.REMOVED_FROM_STAGE, removed_from_stage);
+
+        parent.addChild(this);
     }
     
     function update(s = 1) {
@@ -143,6 +158,25 @@ class Debugger extends Sprite {
         lst_reg.update(chip8.PC, chip8.I, chip8.DT, chip8.ST, chip8.V);
         if (running == false) 
             update();
+    }
+
+    function on_load() {
+        mouseChildren = false;
+        if (rom_data != null && running) 
+            on_pause(); 
+
+        dlg_select.show(parent);
+    }
+
+    function on_rom_select(rom) {
+        dlg_select.hide();
+        mouseChildren = true;
+        load(rom);
+    }
+
+    function on_rom_cancel() {
+        dlg_select.hide();
+        mouseChildren = true;
     }
     
     function added_to_stage(e:Event) {

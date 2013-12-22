@@ -7,7 +7,7 @@ import flash.text.TextField;
 import flash.text.TextFieldAutoSize;
 import flash.text.TextFormat;
 import flash.text.TextFormatAlign;
-import res.Fonts;
+import res.Fonts.Dina;
 import res.Images;
 
 using Std;
@@ -132,6 +132,9 @@ class CodeList extends Sprite{
     }
 
     public function unload() {
+        for (code in codes) lists.removeChild(code);
+        for (row  in rows)  lines.removeChild(row);
+
         codes = [];
         rows  = [];
         reset();
@@ -212,9 +215,8 @@ class CodeList extends Sprite{
 
 private class CodeBlock extends TextField {
     
-    static var DEFAULT_FONT   = new DinaFont();
     static var DEFAULT_FORMAT = new TextFormat(
-        DEFAULT_FONT.fontName, 
+        Dina.fontName, 
         26, 0x000000, false, false, false, "", "", 
         TextFormatAlign.CENTER);
     
