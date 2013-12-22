@@ -10,7 +10,6 @@ import flash.text.TextFieldAutoSize;
 import flash.text.TextFormat;
 import flash.text.TextFormatAlign;
 import flash.utils.ByteArray;
-import haxe.io.BytesData;
 import res.Images;
 import res.Fonts.Dina;
 import res.Roms;
@@ -47,7 +46,7 @@ class RomSelect extends Sprite {
     var names     :Array<TextField>;
     var selected  :Class<ByteArray>;
 
-    var fun_select:Class<BytesData>->Void;
+    var fun_select:Class<ByteArray>->Void;
     var fun_cancel:Void->Void;
 
     public function new(select, cancel) {
