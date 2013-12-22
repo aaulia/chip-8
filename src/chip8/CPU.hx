@@ -14,6 +14,7 @@ class CPU {
     static inline var RAM_SIZE =  4096;
     static inline var PC_START = 0x200;
     static inline var FONT_POS = 0x050;
+    static inline var CYC_60HZ = 16.67;
 
     static inline var A = 0xA;
     static inline var B = 0xB;
@@ -63,7 +64,7 @@ class CPU {
     var op_map:Vector<OpHandler>;
     var gpu:GPU;
     var key:KEY;
-    var acc:Int;
+    var acc:Float;
     var cyc:Float;
     
     
@@ -128,8 +129,8 @@ class CPU {
             p);
         
             
-        acc += (cyc / s).int();
-        if (acc > 1000) {
+        acc += (cyc / s);
+        while (acc > CYC_60HZ) {
             if (DT > 0) DT--;
             if (ST > 0) {
                 //
@@ -137,7 +138,7 @@ class CPU {
                 //
                 ST--;
             }
-            acc &= 999;
+            acc -= CYC_60HZ;
         }
     }
 

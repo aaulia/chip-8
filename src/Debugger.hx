@@ -21,7 +21,7 @@ using StringTools;
 @:access(chip8.CPU) 
 class Debugger extends Sprite {
 
-    static inline var SPEED_MULTIPLIER = 10;
+    static inline var SPEED_MULTIPLIER = 40;
 
     var running :Bool;
     var chip8   :CPU;
@@ -122,9 +122,11 @@ class Debugger extends Sprite {
         parent.addChild(this);
     }
     
-    function update(s = 1) {
-        for (i in 0...s) chip8.cycle(s);
-        lst_codes.position = (chip8.PC - 0x200);
+    function update(c = 1) {
+        for (i in 0...c) {
+            chip8.cycle(SPEED_MULTIPLIER);
+            lst_codes.position = (chip8.PC - 0x200);
+        }
     }
     
     function on_start() {
