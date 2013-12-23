@@ -24,8 +24,13 @@ class CodeList extends Sprite{
     var frame:Rectangle;
 
 
+    var column (get, null):Int;
+    function get_column() 
+        return ((frame.width - 54) / 36).int();
+
+
     function highlight(p, v) {
-        var h = (frame.width / 36).int() - 1;
+        var h = column;
         var r = (p / h).int();
         var c = (p % h);
 
@@ -89,9 +94,9 @@ class CodeList extends Sprite{
         area.scrollRect = frame;
         area.addChild(lists);
 
-        var c = (frame.width / 36).int() - 1;
+        var c = column;
         for (i in 0...c) {
-            var m  = new CodeBlock(this, (i + 1) * 36, 0, 36, 26, 0x444444);
+            var m  = new CodeBlock(this, 54 + (i * 36), -1, 36, 26, 0x444444);
             m.text = i.hex(2);
             cols.push(m);
         }
@@ -100,7 +105,7 @@ class CodeList extends Sprite{
     public function load(rom) {
         unload();
 
-        var h = (frame.width / 36).int() - 1;
+        var h = column;
         var p = 0;
         while (p < rom.length) {
             
@@ -109,12 +114,12 @@ class CodeList extends Sprite{
             var r = (p / h).int();
 
             if (c == 0) {
-                var m  = new CodeBlock(lines, 0, r * 26, 36, 26, 0x444444);
-                m.text = (r * h).hex(2);
+                var m  = new CodeBlock(lines, 0, r * 26, 54, 26, 0x444444);
+                m.text = (r * h).hex(3);
                 rows.push(m);
             }
 
-            codes[p] = new CodeBlock(lists, (c + 1) * 36, r * 26, 36, 26);
+            codes[p] = new CodeBlock(lists, 54 + (c * 36), r * 26, 36, 26);
             codes[p].highlight = false;
             codes[p].text = o.hex(2);
             p++;
@@ -141,7 +146,8 @@ class CodeList extends Sprite{
     }
 
 
-    function on_scroll(pos, delta) lists.y = -pos;
+    function on_scroll(pos, delta) 
+        lists.y = -pos;
 
     function op_to_string(pc, hi, lo) {
         
