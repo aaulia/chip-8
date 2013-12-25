@@ -79,6 +79,23 @@ class RomSelect extends Sprite {
         selected = ROM_CLASS[0];
         names[0].backgroundColor = 0x345678;
         names[0].textColor = 0xFFFFFF;
+
+        lists.addEventListener(MouseEvent.MOUSE_WHEEL, on_wheel, false, 0, true);
+    }
+
+    function on_wheel(e:MouseEvent) {
+        var pos = cast (scr_bar.position - e.delta);
+        var max = scr_bar.maximum;
+        var min = 0;
+
+        if (pos < min) pos = min;
+        if (pos > max) pos = max;
+
+        frame.y = pos;
+        lists.scrollRect = frame;
+        scr_bar.position = pos;
+
+        trace(pos, min, max, e.delta);
     }
 
     function create_text(name, x, y, w, h) {

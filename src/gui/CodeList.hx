@@ -1,6 +1,7 @@
 package gui;
 
 import flash.display.Sprite;
+import flash.events.MouseEvent;
 import flash.geom.Rectangle;
 import flash.text.AntiAliasType;
 import flash.text.TextField;
@@ -68,8 +69,12 @@ class CodeList extends Sprite{
     public var enabled (default, set):Bool;
     function set_enabled(v) {
         var ch = lists.height;
+
         scbar.enabled = v && (ch > frame.height);
-        return v;
+        mouseEnabled  = v;
+        mouseChildren = v;
+
+        return (enabled = v);
     }
 
 
@@ -130,10 +135,25 @@ class CodeList extends Sprite{
 
     public function reset() {
         var ch = lists.height;
-        if (scbar.enabled = (ch > frame.height))
+        if (scbar.enabled = (ch > frame.height)) {
             scbar.maximum = (ch - frame.height).int();
-
+            addEventListener(MouseEvent.MOUSE_WHEEL, on_wheel, false, 0, true);
+        } else {
+            removeEventListener(MouseEvent.MOUSE_WHEEL, on_wheel, false);
+        }
         position = 0;
+    }
+
+    function on_wheel(e:MouseEvent) {
+        var pos = cast (scbar.position - e.delta);
+        var max = scbar.maximum;
+        var min = 0;
+
+        if (pos < min) pos = min;
+        if (pos > max) pos = max;
+
+        scbar.position = pos;
+        lists.y = -pos;
     }
 
     public function unload() {
