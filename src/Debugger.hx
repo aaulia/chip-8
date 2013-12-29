@@ -21,7 +21,7 @@ using StringTools;
 @:access(chip8.CPU) 
 class Debugger extends Sprite {
 
-    static inline var SPEED_MULTIPLIER = 40;
+    static inline var SPEED_MULTIPLIER = 20;
 
     var running :Bool;
     var chip8   :CPU;

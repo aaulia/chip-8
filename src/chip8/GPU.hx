@@ -4,24 +4,52 @@ import flash.display.Bitmap;
 import flash.display.BitmapData;
 import flash.geom.Point;
 
+
+enum ScreenMode {
+    CHIP8;
+    SCHIP;
+}
+
 class GPU {
 
-    inline static var SCREEN_W  = 64;
-    inline static var SCREEN_H  = 32;
+    inline static var CHIP8_W   = 64;
+    inline static var CHIP8_H   = 32;
     inline static var COLOR_ON  = 0xFFFFFF;
     inline static var COLOR_OFF = 0x000000;
            static var TOP_LEFT  = new Point(0, 0);
 
            
+    public var mode(default, set):ScreenMode;
+    inline function set_mode(v:ScreenMode) {
+
+        if (vram != null) vram.dispose();
+        if (view != null && view.bitmapData != null) view.bitmapData.dispose();
+
+        var mul = (v == ScreenMode.CHIP8) ? 1 : 2;
+        vram = new BitmapData(CHIP8_W * mul, CHIP8_H * mul, false, COLOR_OFF);
+        if (view != null)
+            view.bitmapData = vram.clone();
+        else 
+            view = new Bitmap(vram.clone());
+
+        view.scaleX = scr_w / vram.width;
+        view.scaleY = scr_h / vram.height;
+
+        return mode = v;
+    }
+
+
     public  var view (default,    null):Bitmap;
     private var vram (default, default):BitmapData;
 
-    public function new(scale:Float = 1.0) {
-        vram = new BitmapData(SCREEN_W, SCREEN_H, false, COLOR_OFF);
-        view = new Bitmap(vram.clone());
-        
-        view.scaleX = scale;
-        view.scaleY = scale;
+    var scr_w:UInt;
+    var scr_h:UInt;
+
+    public function new(w, h) {
+        scr_w = w;
+        scr_h = h;
+
+        mode = ScreenMode.CHIP8;
     }
 
     public inline function cls() {
@@ -29,15 +57,15 @@ class GPU {
     }
 
     public inline function set(x, y) {
-        x  = wrap(x, SCREEN_W);
-        y  = wrap(y, SCREEN_H);
+        x  = wrap(x, CHIP8_W);
+        y  = wrap(y, CHIP8_H);
         vram.setPixel(x, y, vram.getPixel(x, y) ^ COLOR_ON);
         return vram.getPixel(x, y) == COLOR_OFF;
     }
 
     public inline function get(x, y) {
-        x = wrap(x, SCREEN_W);
-        y = wrap(y, SCREEN_H);
+        x = wrap(x, CHIP8_W);
+        y = wrap(y, CHIP8_H);
         return (vram.getPixel(x, y) == COLOR_ON) ? 1 : 0;
     }
 
