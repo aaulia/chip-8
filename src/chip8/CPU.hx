@@ -1,8 +1,11 @@
 package chip8;
 
+import chip8.GPU.GPUMode;
 import haxe.ds.IntMap;
 import haxe.io.Bytes;
 import haxe.ds.Vector;
+import res.Images;
+
 
 using Std;
 using StringTools;
@@ -13,7 +16,8 @@ class CPU {
 
     static inline var RAM_SIZE =  4096;
     static inline var PC_START = 0x200;
-    static inline var FONT_POS = 0x050;
+    static inline var FNT_8x5  = 0x000;
+    static inline var FNT_8x10 = 0x050;
     static inline var CYC_60HZ = 16.67;
 
     static inline var A = 0xA;
@@ -23,31 +27,12 @@ class CPU {
     static inline var E = 0xE;
     static inline var F = 0xF;
 
-    static var FONT_DATA = 
-    [
-        0xF0, 0x90, 0x90, 0x90, 0xF0, // 0
-        0x20, 0x60, 0x20, 0x20, 0x70, // 1
-        0xF0, 0x10, 0xF0, 0x80, 0xF0, // 2
-        0xF0, 0x10, 0xF0, 0x10, 0xF0, // 3
-        0x90, 0x90, 0xF0, 0x10, 0x10, // 4
-        0xF0, 0x80, 0xF0, 0x10, 0xF0, // 5
-        0xF0, 0x80, 0xF0, 0x90, 0xF0, // 6
-        0xF0, 0x10, 0x20, 0x40, 0x40, // 7
-        0xF0, 0x90, 0xF0, 0x90, 0xF0, // 8
-        0xF0, 0x90, 0xF0, 0x10, 0xF0, // 9
-        0xF0, 0x90, 0xF0, 0x90, 0x90, // A
-        0xE0, 0x90, 0xE0, 0x90, 0xE0, // B
-        0xF0, 0x80, 0x80, 0x80, 0xF0, // C
-        0xE0, 0x90, 0x90, 0x90, 0xE0, // D
-        0xF0, 0x80, 0xF0, 0x80, 0xF0, // E
-        0xF0, 0x80, 0xF0, 0x80, 0x80, // F
-    ];
 
-    
 
     var RAM  :Bytes;
     var V    :Vector<Int>;
     var STACK:Array<Int>;
+    var RPL  :Vector<Int>;
 
     var I  (default, set):Int = 0; 
     var DT (default, set):Int = 0; 
@@ -70,15 +55,21 @@ class CPU {
     
 
     public function new(video, input, rate) {
+        
         gpu   = video;
         key   = input;
         acc   = 0;
         cyc   = 1000 / rate;
+
+
         RAM   = Bytes.alloc(RAM_SIZE);
         STACK = [];
         V     = new Vector<Int>(16);
+        RPL   = new Vector<Int>(8);
 
-        for (pos in 0...80) RAM.set(FONT_POS + pos, FONT_DATA[pos]);
+
+        read_font(new Font8x5 (0, 0, false), FNT_8x5 );
+        read_font(new Font8x10(0, 0, false), FNT_8x10);
 
         op_map = new Vector<OpHandler>(16);
         op_map[0x0] = op_0x0; op_map[0x1] = op_0x1;
@@ -91,8 +82,25 @@ class CPU {
         op_map[0xE] = op_0xE; op_map[0xF] = op_0xF;
     }
 
+    inline function read_font(data, pos) {
+        var v = 0;
+        var b = 0;
+
+        for (y in 0...data.height) {
+            v = 0;
+            for (x in 0...8) {
+                b = (data.getPixel(x, y) == 0x000000) ? 1 : 0;
+                v = v | (b << (7 - x));
+            }
+            RAM.set(pos + y, v & 0xFF);
+        }
+
+        data.dispose();
+    }
+
     public function reset() {
-        for (pos in 0...16) V[pos] = 0;
+        for (pos in 0...16)  V[pos] = 0;
+        for (pos in 0...8) RPL[pos] = 0;
 
         STACK = [];
         I     = 0;
@@ -143,11 +151,24 @@ class CPU {
     }
 
     inline function op_0x0(x, y, b, kk, nnn) { 
-        switch (nnn) {
-            case 0x0E0: gpu.cls();
-            case 0x0EE: PC = STACK.pop();
+        switch (y) {
+            case 0xE:
+                if (b == 0x0) gpu.cls();
+                if (b == 0xE) PC = STACK.pop();
+
+            case 0xC:
+                gpu.scroll_h(b);
+
+            case 0xF:
+                if (b == 0xB) { gpu.scroll_v( 4); }
+                if (b == 0xC) { gpu.scroll_v(-4); }
+                if (b == 0xD) { /* quit? */ }
+                if (b == 0xE) gpu.mode = GPUMode.CHIP8;
+                if (b == 0xF) gpu.mode = GPUMode.SCHIP;
+
             default: 
-                // SYS addr (ignored, only works with Old HW)
+                // CALL 1802 Machine code at nnn 
+                // (not implemented on emulator)
         }
     }
 
@@ -217,27 +238,43 @@ class CPU {
     inline function op_0xC(x, y, b, kk, nnn) V[x] = (Math.random() * 0xFF).int() & kk;
 
     inline function op_0xD(x:Int, y:Int, b:Int, kk, nnn) { 
-        
+
+        if (b == 0) b = 16;
+        var hor_span = (b == 16 && gpu.mode == GPUMode.SCHIP) ? 2 : 1;
+
         V[F]  = 0;
         var j = V[y];
+        var p = I;
         for (pos in 0...b) {
 
-            /*
-             * HACK: Should this be % and not clipped?
-             * PURPOSE: So BLITZ can run correctly.
-             */
-            if (j < 0 || j >= 32) break;
+            //
+            // HACK: Should this be % and not clipped?
+            // PURPOSE: So BLITZ (CHIP8) can run correctly.
+            //
+            
+            if (gpu.mode == GPUMode.CHIP8 && (j < 0 || j >= 32)) {
+                j++;
+                p++;
+                continue;
+            }
 
-            var m = RAM.get(I + pos);
+            //
+            //
+            //
+
             var i = V[x];
-            for (bit in 0...8) {
+            for (r in 0...hor_span) {
 
-                if ((m & 0x80) == 0x80)
-                    if (gpu.set(i, j))
-                        V[F] = 1;
+                var m = RAM.get(p++);
+                for (bit in 0...8) {
 
-                m <<= 1;
-                i++;
+                    if ((m & 0x80) == 0x80)
+                        if (gpu.set(i, j))
+                            V[F] = 1;
+
+                    m <<= 1;
+                    i++;
+                }
             }
 
             j++;
@@ -267,7 +304,8 @@ class CPU {
                 V[F] = (I + V[x] > 0x0FFF) ? 1 : 0;
                 I   += V[x];
                 
-            case 0x29: I  = FONT_POS + (V[x] * 5);
+            case 0x29: I  = FNT_8x5  + (V[x] * 5);
+            case 0x30: I  = FNT_8x10 + (V[x] * 10);
             case 0x33: 
                 var v = V[x];
                 var s = (v % 10); v = (v / 10).int();
@@ -287,6 +325,10 @@ class CPU {
                 x++;
                 for (i in 0...x) V[i] = RAM.get(I + i);
                 // I += x;
+
+            case 0x75: for (i in 0...x) RPL[i] =   V[i];
+            case 0x85: for (i in 0...x)   V[i] = RPL[i];
+
 
             default:
                 throw "Unsupported Operation";

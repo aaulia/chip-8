@@ -12,5 +12,7 @@ import flash.display.BitmapData;
 @:bitmap("res/img/ui_scroll_up.png")     class UIScrollUp     extends BitmapData {}
 @:bitmap("res/img/ui_scroll_dn.png")     class UIScrollDn     extends BitmapData {}
 @:bitmap("res/img/ui_scroll_md.png")     class UIScrollMd     extends BitmapData {}
+@:bitmap("res/img/font_8x5.png")         class Font8x5        extends BitmapData {}
+@:bitmap("res/img/font_8x10.png")        class Font8x10       extends BitmapData {}
 
 class Images { }

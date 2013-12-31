@@ -3,42 +3,26 @@ package chip8;
 import flash.display.Bitmap;
 import flash.display.BitmapData;
 import flash.geom.Point;
+import flash.geom.Rectangle;
 
 
-enum ScreenMode {
+enum GPUMode {
     CHIP8;
     SCHIP;
 }
 
 class GPU {
 
-    inline static var CHIP8_W   = 64;
-    inline static var CHIP8_H   = 32;
+    inline static var SCHIP_W   = 128;
+    inline static var SCHIP_H   = 64;
     inline static var COLOR_ON  = 0xFFFFFF;
     inline static var COLOR_OFF = 0x000000;
            static var TOP_LEFT  = new Point(0, 0);
+           static var PIX_BLOCK = new Rectangle(0, 0, 2, 2);
+           static var TMP_BLOCK = new Rectangle(0, 0, 1, 1);
 
            
-    public var mode(default, set):ScreenMode;
-    inline function set_mode(v:ScreenMode) {
-
-        if (vram != null) vram.dispose();
-        if (view != null && view.bitmapData != null) view.bitmapData.dispose();
-
-        var mul = (v == ScreenMode.CHIP8) ? 1 : 2;
-        vram = new BitmapData(CHIP8_W * mul, CHIP8_H * mul, false, COLOR_OFF);
-        if (view != null)
-            view.bitmapData = vram.clone();
-        else 
-            view = new Bitmap(vram.clone());
-
-        view.scaleX = scr_w / vram.width;
-        view.scaleY = scr_h / vram.height;
-
-        return mode = v;
-    }
-
-
+    public  var mode (default, default):GPUMode;
     public  var view (default,    null):Bitmap;
     private var vram (default, default):BitmapData;
 
@@ -49,7 +33,13 @@ class GPU {
         scr_w = w;
         scr_h = h;
 
-        mode = ScreenMode.CHIP8;
+        vram = new BitmapData(SCHIP_W, SCHIP_H, false, COLOR_OFF);
+        view = new Bitmap(vram.clone());
+
+        view.scaleX = scr_w / vram.width;
+        view.scaleY = scr_h / vram.height;
+
+        mode = GPUMode.CHIP8;
     }
 
     public inline function cls() {
@@ -57,16 +47,58 @@ class GPU {
     }
 
     public inline function set(x, y) {
-        x  = wrap(x, CHIP8_W);
-        y  = wrap(y, CHIP8_H);
-        vram.setPixel(x, y, vram.getPixel(x, y) ^ COLOR_ON);
+        switch (mode) {
+            case GPUMode.CHIP8:
+                x  = wrap(x, SCHIP_W >> 1) << 1;
+                y  = wrap(y, SCHIP_H >> 1) << 1;
+
+                PIX_BLOCK.x = x;
+                PIX_BLOCK.y = y;
+                vram.fillRect(PIX_BLOCK, vram.getPixel(x, y) ^ COLOR_ON);
+
+            case GPUMode.SCHIP:
+                x  = wrap(x, SCHIP_W);
+                y  = wrap(y, SCHIP_H);
+                vram.setPixel(x, y, vram.getPixel(x, y) ^ COLOR_ON);
+        }
+
         return vram.getPixel(x, y) == COLOR_OFF;
     }
 
     public inline function get(x, y) {
-        x = wrap(x, CHIP8_W);
-        y = wrap(y, CHIP8_H);
+        switch (mode) {
+            case GPUMode.CHIP8:
+                x = wrap(x, SCHIP_W >> 1) << 1;
+                y = wrap(y, SCHIP_H >> 1) << 1;
+
+            case GPUMode.SCHIP:
+                x = wrap(x, SCHIP_W);
+                y = wrap(y, SCHIP_H);
+        }
+
         return (vram.getPixel(x, y) == COLOR_ON) ? 1 : 0;
+    }
+
+    public inline function scroll_h(n) {
+        vram.scroll(0, n);
+        
+        TMP_BLOCK.x = 0;
+        TMP_BLOCK.y = (n < 0) ? vram.height + n : 0;
+        TMP_BLOCK.width  = vram.width;
+        TMP_BLOCK.height = (n < 0) ? n * -1 : n;
+
+        vram.fillRect(TMP_BLOCK, COLOR_OFF);
+    }
+
+    public inline function scroll_v(n) {
+        vram.scroll(n, 0);
+
+        TMP_BLOCK.x = (n < 0) ? vram.width + n : 0;
+        TMP_BLOCK.y = 0;
+        TMP_BLOCK.width  = (n < 0) ? n * -1 : n;
+        TMP_BLOCK.height = vram.height;
+
+        vram.fillRect(TMP_BLOCK, COLOR_OFF);
     }
 
     public inline function flip() {
@@ -76,6 +108,7 @@ class GPU {
     public inline function reset() {
         cls ();
         flip();
+        mode = GPUMode.CHIP8;
     }
 
     inline function wrap(c, s) {

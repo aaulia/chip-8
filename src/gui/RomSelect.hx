@@ -20,14 +20,34 @@ class RomSelect extends Sprite {
 
     static var ROM_NAMES = 
     [
-        "PUZZLE15", "BLINKY",  "BLITZ",  "BRIX",   "CONNECT4", "GUESS",  "HIDDEN", "INVADERS", "KALEID", "MAZE", "MERLIN", "MISSILE", 
-        "PONG",     "PONG2",   "PUZZLE", "SYZYGY", "TANK",     "TETRIS", "TICTAC", "UFO",      "VBRIX",  "VERS", "WIPEOFF"
+        "C8_PUZZLE15", "C8_BLINKY",  "C8_BLITZ",  "C8_BRIX",   
+        "C8_CONNECT4", "C8_GUESS",   "C8_HIDDEN", "C8_INVADERS", 
+        "C8_KALEID",   "C8_MAZE",    "C8_MERLIN", "C8_MISSILE", 
+        "C8_PONG",     "C8_PONG2",   "C8_PUZZLE", "C8_SYZYGY", 
+        "C8_TANK",     "C8_TETRIS",  "C8_TICTAC", "C8_UFO", 
+        "C8_VBRIX",    "C8_VERS",    "C8_WIPEOFF",
+
+        "SC_ALIEN",    "SC_ANT",     "SC_BLINKY", "SC_CAR",  
+        "SC_DRAGON1",  "SC_DRAGON2", "SC_FIELD",  "SC_JOUST23", 
+        "SC_MAZE",     "SC_MINES",   "SC_PIPER",  "SC_RACE",  
+        "SC_SPACEFIG", "SC_SQUARE",  "SC_TEST",   "SC_UBOAT",   
+        "SC_WORM3"
     ];
 
     static var ROM_CLASS:Array<Class<ByteArray>> =
     [
-        PUZZLE15, BLINKY, BLITZ,  BRIX,   CONNECT4, GUESS,  HIDDEN, INVADERS, KALEID, MAZE, MERLIN, MISSILE,
-        PONG,     PONG2,  PUZZLE, SYZYGY, TANK,     TETRIS, TICTAC, UFO,      VBRIX,  VERS, WIPEOFF 
+        C8_PUZZLE15, C8_BLINKY,  C8_BLITZ,  C8_BRIX,   
+        C8_CONNECT4, C8_GUESS,   C8_HIDDEN, C8_INVADERS, 
+        C8_KALEID,   C8_MAZE,    C8_MERLIN, C8_MISSILE, 
+        C8_PONG,     C8_PONG2,   C8_PUZZLE, C8_SYZYGY, 
+        C8_TANK,     C8_TETRIS,  C8_TICTAC, C8_UFO,
+        C8_VBRIX,    C8_VERS,    C8_WIPEOFF,
+
+        SC_ALIEN,    SC_ANT,     SC_BLINKY, SC_CAR,  
+        SC_DRAGON1,  SC_DRAGON2, SC_FIELD,  SC_JOUST23, 
+        SC_MAZE,     SC_MINES,   SC_PIPER,  SC_RACE,  
+        SC_SPACEFIG, SC_SQUARE,  SC_TEST,   SC_UBOAT,   
+        SC_WORM3
     ];
 
     static var DEFAULT_FORMAT = new TextFormat(
@@ -131,8 +151,8 @@ class RomSelect extends Sprite {
     public function show(parent:DisplayObjectContainer) {
         parent.addChild(this);
 
-        x = cast (parent.width  - bmp_window.width)  >> 1;
-        y = cast (parent.height - bmp_window.height) >> 1;
+        x = cast (stage.stageWidth  - bmp_window.width)  >> 1;
+        y = cast (stage.stageHeight - bmp_window.height) >> 1;
     }
 
     public function hide() {
