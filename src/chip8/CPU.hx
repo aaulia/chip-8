@@ -252,7 +252,7 @@ class CPU {
             // PURPOSE: So BLITZ (CHIP8) can run correctly.
             //
             
-            if (gpu.mode == GPUMode.CHIP8 && (j < 0 || j >= 32)) {
+            if (gpu.mode == GPUMode.CHIP8 && (j < 0 || j >= gpu.height)) {
                 j++;
                 p++;
                 continue;

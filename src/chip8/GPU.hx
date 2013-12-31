@@ -22,9 +22,18 @@ class GPU {
            static var TMP_BLOCK = new Rectangle(0, 0, 1, 1);
 
            
-    public  var mode (default, default):GPUMode;
-    public  var view (default,    null):Bitmap;
-    private var vram (default, default):BitmapData;
+
+    private var vram(default, default):BitmapData;
+    public  var view(default,    null):Bitmap;
+    public  var mode(default, default):GPUMode;
+
+
+    public  var width (get, never):Int;
+    public  var height(get, never):Int;
+
+    inline function get_width () return (mode == GPUMode.CHIP8) ? SCHIP_W >> 1 : SCHIP_W;
+    inline function get_height() return (mode == GPUMode.CHIP8) ? SCHIP_H >> 1 : SCHIP_H;
+
 
     var scr_w:UInt;
     var scr_h:UInt;
