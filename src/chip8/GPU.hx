@@ -15,8 +15,8 @@ class GPU {
 
     inline static var SCHIP_W   = 128;
     inline static var SCHIP_H   = 64;
-    inline static var COLOR_ON  = 0xFFFFFF;
-    inline static var COLOR_OFF = 0x000000;
+    inline static var COLOR_ON  = 0x34383b;
+    inline static var COLOR_OFF = 0x7b8563;
            static var TOP_LEFT  = new Point(0, 0);
            static var PIX_BLOCK = new Rectangle(0, 0, 2, 2);
            static var TMP_BLOCK = new Rectangle(0, 0, 1, 1);
@@ -56,22 +56,26 @@ class GPU {
     }
 
     public inline function set(x, y) {
+
+        var s = 0;
         switch (mode) {
             case GPUMode.CHIP8:
-                x  = wrap(x, SCHIP_W >> 1) << 1;
-                y  = wrap(y, SCHIP_H >> 1) << 1;
-
+                x = wrap(x, SCHIP_W >> 1) << 1;
+                y = wrap(y, SCHIP_H >> 1) << 1;
+                s = ((vram.getPixel(x, y) == COLOR_ON) ? 1 : 0) ^ 1;
+                
                 PIX_BLOCK.x = x;
                 PIX_BLOCK.y = y;
-                vram.fillRect(PIX_BLOCK, vram.getPixel(x, y) ^ COLOR_ON);
+                vram.fillRect(PIX_BLOCK, ((s == 1) ? COLOR_ON : COLOR_OFF));
 
             case GPUMode.SCHIP:
-                x  = wrap(x, SCHIP_W);
-                y  = wrap(y, SCHIP_H);
-                vram.setPixel(x, y, vram.getPixel(x, y) ^ COLOR_ON);
+                x = wrap(x, SCHIP_W);
+                y = wrap(y, SCHIP_H);
+                s = ((vram.getPixel(x, y) == COLOR_ON) ? 1 : 0) ^ 1;
+                vram.setPixel(x, y, ((s == 1) ? COLOR_ON : COLOR_OFF));
         }
 
-        return vram.getPixel(x, y) == COLOR_OFF;
+        return s == 0;
     }
 
     public inline function get(x, y) {
